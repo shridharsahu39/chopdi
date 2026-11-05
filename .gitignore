@@ -1,0 +1,24 @@
+# Read-only checkouts of Frappe Books, ERPNext and Frappe (see docs/REFERENCE.md). Never committed.
+/reference/
+
+# Local environments and outputs
+/dist/
+/runtime/
+/upload/
+node_modules/
+__pycache__/
+*.pyc
+*.sqlite3
+*.db
+.venv/
+server/app/static/ui/
+config.env
+.env
+.env.*
+secrets.json
+credentials.json
+*.pem
+*.key
+
+# This machine's extra instructions for Claude Code (private; see CLAUDE.md)
+CLAUDE.local.md

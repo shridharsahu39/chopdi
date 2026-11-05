@@ -1,0 +1,43 @@
+# Chopdi: guide for contributors and coding agents
+
+Read README.md, docs/SCOPE.md, docs/PARITY.md, docs/PARITY_TALLY.md and docs/REFERENCE.md before work.
+
+- **What it is:** a book of accounts as a web app.
+  - It brings Frappe Books' functionality to the web, rebuilt as one FastAPI monolith (`server/`) with a React UI (`frontend/`).
+  - It adds ERPNext's Accounts module, Akaunting's functionality, Tally's accounting features (`docs/PARITY_TALLY.md`) and Frappe-style users, roles, permissions and API access.
+  - Nothing in those lists is dropped without a numbered decision in `docs/SCOPE.md` and a `[-]` in `docs/PARITY.md`.
+- **Scope:**
+  - In: everything in the lists, including inventory, POS, sales tools, TDS/TCS, order processing and manufacturing. Several companies share one installation.
+  - Out for now: GST, payroll and ERPNext sync. GST's items stay listed as `[-]`, so nothing is missed when it comes back.
+- **Hosting:** it runs wherever cPanel's Python apps run (Passenger), so it also runs on any plain server. That means:
+  - MySQL/MariaDB, no Docker;
+  - code and pins kept compatible with Python 3.8;
+  - pure-Python dependencies only.
+- **The UI follows Books' presentation and components, not its theme** (D-10). Use the same layout and the same kinds of components, behaving the same way: sidebar groups, list views with filters, forms with child tables, quick edit, command palette, shortcuts, reports, print view, setup wizard. Colours, fonts and visual style are Chopdi's own, through theme tokens.
+- **Rebuild the functionality, never the code** (D-1, D-11).
+  - Frappe Books is AGPL-3.0, ERPNext GPL-3.0, Frappe MIT, and Akaunting the Business Source License.
+  - Read them for behaviour, then write Chopdi's own code, templates, CSS and icons. Don't copy or translate their code line by line.
+  - Never use their names or logos in the product.
+  - Chopdi is MIT-licensed (D-12). Ported code from those projects would break that.
+- **The ledger:** double entry.
+  - Every submitted document writes balanced ledger rows, with debits equal to credits in the company currency.
+  - Submitted documents are never edited or deleted. Cancelling writes reversing rows, and amending creates a new document linked to the cancelled one.
+  - Keep reason, actor, idempotency (request keys), row locks and audit history for every financial change.
+- **Money:** a fixed-point decimal, never a float: `Decimal` in Python and a decimal string in JSON. Each currency stores at its own precision, and exchange rates keep 9 decimal places.
+- **Everyone is a user with roles:** System Manager, Accounts Manager, Accounts User, and so on.
+  - Document permissions: read, write, create, submit, cancel, amend, delete, report, export, import, share, print, email.
+  - User permissions restrict by a linked record, a company for example.
+  - Fields have permission levels.
+  - An **API user** signs in with a per-user API key and secret (`Authorization: token key:secret`). It has its own roles, and every call it makes is logged.
+- **Other applications post through the API** (`docs/API_INTEGRATION.md`). Each request carries the caller's own id as an idempotency key, so a retry never posts twice.
+- **Schema changes only through Alembic:** edit the models, run `alembic revision --autogenerate -m ...`, review it, `alembic upgrade head`, and commit the migration. Never use `create_all` and never hand-edit tables. Migrations must run on MySQL/MariaDB as well as SQLite.
+- **Configuration:**
+  - Only the database login and `SECRET_KEY` (plus optional `ENVIRONMENT` and `UPLOAD_DIR`) are environment variables.
+  - Every other setting lives in the database, behind a Settings screen, and is audited.
+  - Secrets are sealed with `SECRET_KEY` and never returned to the browser or written to the audit log.
+- **Never commit** real credentials, customer or company data, databases, uploads or generated environments. Don't print secrets. Test data uses obviously fake values: ABCPE1234F, 9999999999, qa+1@example.com.
+- **Releases:**
+  - bump `server/app/__init__.py` `__version__`;
+  - run pytest, and a fresh-install check (`alembic upgrade head` on an empty database);
+  - state what wasn't verified.
+- **One pull request at a time into `main`:** add to the open one until it's merged, and never stack a second one on it.
